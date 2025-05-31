@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DebugInspectorOAuthClientProvider } from "../lib/auth";
-import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { AlertCircle } from "lucide-react";
 import { AuthDebuggerState } from "../lib/auth-types";
 import { OAuthFlowProgress } from "./OAuthFlowProgress";
@@ -120,14 +119,43 @@ const AuthDebugger = ({
 
     updateAuthState({ isInitiatingAuth: true, statusMessage: null });
     try {
-      const serverAuthProvider = new DebugInspectorOAuthClientProvider(
-        serverUrl,
-      );
-      await auth(serverAuthProvider, { serverUrl: serverUrl });
+      // Step through the OAuth flow using the state machine instead of the auth() function
+      let currentState: AuthDebuggerState = {
+        ...authState,
+        oauthStep: "metadata_discovery",
+        authorizationUrl: null,
+        latestError: null,
+      };
+
+      const oauthMachine = new OAuthStateMachine(serverUrl, (updates) => {
+        // Update our temporary state during the process
+        currentState = { ...currentState, ...updates };
+        // But don't call updateAuthState yet
+      });
+
+      // Manually step through each stage of the OAuth flow
+      while (currentState.oauthStep !== "complete") {
+        await oauthMachine.executeStep(currentState);
+        // In quick mode, we'll just redirect to the authorization URL
+        if (
+          currentState.oauthStep === "authorization_code" &&
+          currentState.authorizationUrl
+        ) {
+          // Open the authorization URL automatically
+          window.location.href = currentState.authorizationUrl;
+          break;
+        }
+      }
+
+      // After the flow completes or reaches a user-input step, update the app state
       updateAuthState({
+        ...currentState,
         statusMessage: {
           type: "info",
-          message: "Starting OAuth authentication process...",
+          message:
+            currentState.oauthStep === "complete"
+              ? "Authentication completed successfully"
+              : "Please complete authentication in the opened window and enter the code",
         },
       });
     } catch (error) {
@@ -141,7 +169,7 @@ const AuthDebugger = ({
     } finally {
       updateAuthState({ isInitiatingAuth: false });
     }
-  }, [serverUrl, updateAuthState]);
+  }, [serverUrl, updateAuthState, authState]);
 
   const handleClearOAuth = useCallback(() => {
     if (serverUrl) {
