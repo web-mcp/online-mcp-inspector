@@ -764,7 +764,7 @@ const App = () => {
     </TabsContent>
   );
 
-  if (window.location.pathname === "/oauth/callback") {
+  if (window.location.pathname === "/inspector/oauth/callback") {
     const OAuthCallback = React.lazy(
       () => import("./components/OAuthCallback"),
     );

@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "dev": "vite --port 6274",
+    "lib": "vite build -c vite.library.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview --port 6274",
@@ -49,7 +50,8 @@
     "serve-handler": "^6.1.6",
     "tailwind-merge": "^2.5.3",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.25.76"
+    "vite-plugin-dts": "^4.5.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",

@@ -46,6 +46,7 @@ import {
 import packageJson from "../../../package.json";
 import {
   getMCPProxyAddress,
+  getProxyMCPURL,
   getMCPServerRequestMaxTotalTimeout,
   resetRequestTimeoutOnProgress,
   getMCPProxyAuthToken,
@@ -294,7 +295,7 @@ export function useConnection({
       }
     } catch (e) {
       console.error("Couldn't connect to MCP Proxy Server", e);
-      throw e;
+      // throw e;
     }
   };
 
@@ -390,10 +391,12 @@ export function useConnection({
       let mcpProxyServerUrl;
       switch (transportType) {
         case "stdio":
-          mcpProxyServerUrl = new URL(`${getMCPProxyAddress(config)}/stdio`);
-          mcpProxyServerUrl.searchParams.append("command", command);
-          mcpProxyServerUrl.searchParams.append("args", args);
-          mcpProxyServerUrl.searchParams.append("env", JSON.stringify(env));
+          mcpProxyServerUrl = getProxyMCPURL(config, {
+            transportType,
+            command,
+            args,
+            env,
+          });
           transportOptions = {
             authProvider: serverAuthProvider,
             eventSourceInit: {
@@ -413,8 +416,10 @@ export function useConnection({
           break;
 
         case "sse":
-          mcpProxyServerUrl = new URL(`${getMCPProxyAddress(config)}/sse`);
-          mcpProxyServerUrl.searchParams.append("url", sseUrl);
+          mcpProxyServerUrl = getProxyMCPURL(config, {
+            transportType,
+            sseUrl,
+          });
           transportOptions = {
             eventSourceInit: {
               fetch: (
@@ -433,8 +438,10 @@ export function useConnection({
           break;
 
         case "streamable-http":
-          mcpProxyServerUrl = new URL(`${getMCPProxyAddress(config)}/mcp`);
-          mcpProxyServerUrl.searchParams.append("url", sseUrl);
+          mcpProxyServerUrl = getProxyMCPURL(config, {
+            transportType,
+            sseUrl,
+          });
           transportOptions = {
             eventSourceInit: {
               fetch: (
@@ -459,10 +466,10 @@ export function useConnection({
           };
           break;
       }
-      (mcpProxyServerUrl as URL).searchParams.append(
-        "transportType",
-        transportType,
-      );
+      // (mcpProxyServerUrl as URL).searchParams.append(
+      //   "transportType",
+      //   transportType,
+      // );
 
       if (onNotification) {
         [
